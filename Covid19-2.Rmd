@@ -3,8 +3,8 @@ title: "Covid19 - Brasil"
 author: "Mauricio Uriona Maldonado"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  html_document: default
-  word_document: default
+  html_document: 
+    keep_md: true
 ---
 
 ```{r setup, include=FALSE}
@@ -36,7 +36,7 @@ library(openxlsx)
 library(tidyr)
 
 #0. Importar dados do excel
-COVID19 <- read_excel("~/Downloads/HIST_PAINEL_COVIDBR_22ago2020.xlsx")
+COVID19 <- read_excel("~/Downloads/HIST_PAINEL_COVIDBR_23ago2020.xlsx")
 
 COVID19$casosAcumulado <- as.numeric(COVID19$casosAcumulado)
 COVID19$obitosAcumulado <- as.numeric(COVID19$obitosAcumulado)
@@ -115,7 +115,7 @@ Tabela resumo de casos por Estado, acumulados e normalizados (x100.000 hab.)
 #library(DT)
 library(lubridate)
 
-ibge <- read_excel("~/Downloads/ibge.xls", 
+ibge <- read_excel("ibge.xls", 
     range = "A3:N30")
 
 pop <- ibge %>% 
@@ -865,12 +865,12 @@ library(XML)
 library(RCurl)
 # Tell RWordPress how to set the user name, password, and URL for your WordPress site.
 
-options(WordpressLogin = c(admin = 'Muriona@1'),
-       WordpressURL = 'http://sinergia.ufsc.br/xmlrpc.php')
+#options(WordpressLogin = c(admin = 'Muriona@1'),
+#       WordpressURL = 'http://sinergia.ufsc.br/xmlrpc.php')
 
 # Tell knitr to create the html code and upload it to your WordPress site
 
-knit2wp('Covid19-2.Rmd', title = 'Covid-19 - Brasil - atualizado 23/08',  categories = c('SystemDynamics','Simulation'), mt_keywords = c('knitr', 'wordpress'), publish = FALSE)
+#knit2wp('Covid19-2.Rmd', title = 'Covid-19 - Brasil - atualizado 23/08',  categories = c('SystemDynamics','Simulation'), mt_keywords = c('knitr', 'wordpress'), publish = FALSE)
 
 ```
 
