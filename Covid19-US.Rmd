@@ -1,0 +1,116 @@
+---
+title: "Covid19 - Brasil"
+author: "Mauricio Uriona Maldonado"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## 1. USA
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(reshape2)
+library(ggplot2)
+library(gridExtra) # for arranging plots
+library(cowplot)
+library(ggsci)
+library(readxl)
+library(RColorBrewer)
+library(ggpmisc)
+library(scales)
+library(ggpubr)
+library(Metrics)
+library(readr)
+library(dplyr)
+library(knitr)
+
+#0. Importar dados do excel
+library(utils)
+
+#read the Dataset sheet into “R”. The dataset will be called "data".
+COVID19BO <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM")
+
+US <- filter(COVID19BO, countriesAndTerritories=='United_States_of_America')
+US[, c(2,3,4,7,8,9,11)] <- NULL
+  
+colnames(US) <- c("data","novos","obitos", "população")
+
+US$data <- as.Date(US$data, format = "%d/%m/%Y") 
+
+US <- US%>% 
+  arrange(data) %>% 
+  mutate(acumulados = cumsum(novos)) 
+
+US <- US %>% 
+  mutate(obitosAcum = cumsum(obitos))
+US <- US %>% 
+  mutate(index = acumulados * 100000 / população)
+
+US <- US[, c(1,2,5,3,6,4,7)]
+
+BoNovos <- US %>% 
+  select(data, novos)
+
+BoAcum <- US %>% 
+  select(data, acumulados)
+
+BObitosNovos <- US %>% 
+  select(data, obitos)
+
+BObitosAcum <- US %>% 
+  select(data, obitosAcum)
+
+colnames(BoNovos) <- c("data","casos")
+colnames(BoAcum) <- c("data","casos")
+
+colnames(BObitosNovos) <- c("data","obitos")
+colnames(BObitosAcum) <- c("data","obitos")
+
+#agrupar dados de casos novos e acumulados
+
+ggplot(data=US, aes(x=data, y=novos)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "US - casos nuevos")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+ggplot(data=US, aes(x=data, y=acumulados)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "US - casos acumulados")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+ggplot(data=US, aes(x=data, y=obitos)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "US - muertes por día")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+ggplot(data=US, aes(x=data, y=obitosAcum)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "US - muertes acumuladas")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+```
+
+## Tablas resúmen
+
+```{r, echo = FALSE}
+
+  
+kable(tail(US, n = 10), caption="Casos nuevos, acumulados, muertes nuevas y acumuladas, población y casos acumulados por 100 mil habitantes - últimos 10 días", digits = 2)
+```
+
+
+## Casos reais vs casos simulados
+
+
+Falta hacer...
+
+

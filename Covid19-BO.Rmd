@@ -1,0 +1,116 @@
+---
+title: "Covid19 - Brasil"
+author: "Mauricio Uriona Maldonado"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## 1. Bolivia
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(reshape2)
+library(ggplot2)
+library(gridExtra) # for arranging plots
+library(cowplot)
+library(ggsci)
+library(readxl)
+library(RColorBrewer)
+library(ggpmisc)
+library(scales)
+library(ggpubr)
+library(Metrics)
+library(readr)
+library(dplyr)
+library(knitr)
+
+#0. Importar dados do excel
+library(utils)
+
+#read the Dataset sheet into “R”. The dataset will be called "data".
+COVID19BO <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM")
+
+Bolivia <- filter(COVID19BO, countriesAndTerritories=='Bolivia')
+Bolivia[, c(2,3,4,7,8,9,11)] <- NULL
+  
+colnames(Bolivia) <- c("data","novos","obitos", "população")
+
+Bolivia$data <- as.Date(Bolivia$data, format = "%d/%m/%Y") 
+
+Bolivia <- Bolivia%>% 
+  arrange(data) %>% 
+  mutate(acumulados = cumsum(novos)) 
+
+Bolivia <- Bolivia %>% 
+  mutate(obitosAcum = cumsum(obitos))
+Bolivia <- Bolivia %>% 
+  mutate(index = acumulados * 100000 / população)
+
+Bolivia <- Bolivia[, c(1,2,5,3,6,4,7)]
+
+BoNovos <- Bolivia %>% 
+  select(data, novos)
+
+BoAcum <- Bolivia %>% 
+  select(data, acumulados)
+
+BObitosNovos <- Bolivia %>% 
+  select(data, obitos)
+
+BObitosAcum <- Bolivia %>% 
+  select(data, obitosAcum)
+
+colnames(BoNovos) <- c("data","casos")
+colnames(BoAcum) <- c("data","casos")
+
+colnames(BObitosNovos) <- c("data","obitos")
+colnames(BObitosAcum) <- c("data","obitos")
+
+#agrupar dados de casos novos e acumulados
+
+ggplot(data=Bolivia, aes(x=data, y=novos)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "Bolivia - casos nuevos")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+ggplot(data=Bolivia, aes(x=data, y=acumulados)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "Bolivia - casos acumulados")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+ggplot(data=Bolivia, aes(x=data, y=obitos)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "Bolivia - muertes por día")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+ggplot(data=Bolivia, aes(x=data, y=obitosAcum)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "Bolivia - muertes acumuladas")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m")
+
+```
+
+## Tablas resúmen
+
+```{r, echo = FALSE}
+
+  
+kable(tail(Bolivia, n = 10), caption="Casos nuevos, acumulados, muertes nuevas y acumuladas, población y casos acumulados por 100 mil habitantes - últimos 10 días", digits = 2)
+```
+
+
+## Casos reais vs casos simulados
+
+
+Falta hacer...
+
+

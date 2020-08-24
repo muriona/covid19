@@ -1,0 +1,876 @@
+---
+title: "Covid19 - Brasil"
+author: "Mauricio Uriona Maldonado"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## 1. Brasil - atualizado em "`r format(Sys.time(), '%d %B, %Y')`"
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(reshape2)
+library(ggplot2)
+library(gridExtra) # for arranging plots
+library(cowplot)
+library(ggsci)
+library(readxl)
+library(RColorBrewer)
+library(ggpmisc)
+library(scales)
+library(ggpubr)
+library(Metrics)
+library(readr)
+library(dplyr)
+library(knitr)
+library(openxlsx)
+library(tidyr)
+
+#0. Importar dados do excel
+COVID19 <- read_excel("~/Downloads/HIST_PAINEL_COVIDBR_22ago2020.xlsx")
+
+COVID19$casosAcumulado <- as.numeric(COVID19$casosAcumulado)
+COVID19$obitosAcumulado <- as.numeric(COVID19$obitosAcumulado)
+
+library(visdat)
+#vis_miss(COVID19, warn_large_data = FALSE)
+
+Brasil <- COVID19 %>% 
+  filter(regiao == "Brasil") %>% 
+  mutate(casosNovos = casosAcumulado - lag(casosAcumulado, 1)) %>% 
+  mutate(obitosNovos = obitosAcumulado - lag(obitosAcumulado)) %>% 
+  replace_na(list(Recuperadosnovos = 0, emAcompanhamentoNovos = 0, casosNovos = 1, obitosNovos = 0))
+
+Brasil <- Brasil[, 8:16]
+
+Brasil$data <- as.Date(Brasil$data, format = "%Y-%m-%d")
+Brasil$populacaoTCU2019 <- as.numeric(Brasil$populacaoTCU2019)
+Brasil$semanaEpi <- as.numeric(Brasil$semanaEpi)
+
+data <- seq(as.Date("2020-01-30"), by=1, len=27)
+semanaEpi <- rep(5:9, each=7)
+populacaoTCU2019 <- rep(210147125,27)
+casosAcumulado <- rep(0,27)
+obitosAcumulado <- rep(0,27)
+Recuperadosnovos <- rep(0,27)
+emAcompanhamentoNovos <- rep(0,27)
+casosNovos <- rep(0,27)
+obitosNovos <- rep(0,27)
+
+semanaEpi <- semanaEpi[-c(32:35)]
+
+semanaEpi <- semanaEpi[-c(1:4)]
+
+semanaEpi <- as.numeric(semanaEpi)
+populacaoTCU2019 <- as.numeric(populacaoTCU2019)
+
+Brasil1 <- data.frame(data, semanaEpi, populacaoTCU2019, casosAcumulado, obitosAcumulado, Recuperadosnovos, emAcompanhamentoNovos, casosNovos, obitosNovos)
+
+Brasil$Recuperadosnovos <- as.numeric(Brasil$Recuperadosnovos)
+Brasil$emAcompanhamentoNovos <- as.numeric(Brasil$emAcompanhamentoNovos)
+
+Brasil <- Brasil1 %>% 
+  bind_rows(Brasil)
+
+BrNovos <- Brasil %>% 
+  select(data, casosNovos)
+
+BrAcum <- Brasil %>% 
+  select(data, casosAcumulado)
+
+#Exportar para Stella
+write.xlsx(
+  BrNovos,
+  "dados_BR.xlsx",
+  sheetName = "Rdata",
+  col.names = TRUE,
+  row.names = FALSE,
+  append = FALSE,
+  showNA = TRUE,
+  password = NULL
+)
+
+
+```
+
+
+```{r, stella, echo = FALSE}
+stella <- read_excel("stella_covid.xlsx", 
+    sheet = "BAU")
+colnames(stella) <- c("dia","BrNovos", "BrAcum", "ObitosNovos", "ObitosAcum")
+```
+
+Tabela resumo de casos por Estado, acumulados e normalizados (x100.000 hab.)
+
+```{r, ibge, echo = FALSE}
+#library(DT)
+library(lubridate)
+
+ibge <- read_excel("~/Downloads/ibge.xls", 
+    range = "A3:N30")
+
+pop <- ibge %>% 
+  select(1,7)
+colnames(pop) <- c("estado","população")
+pop$numero <- 1:27
+
+############ para calcular quantos linhas cortar do df COVID19
+datas <- today() - as.Date("2020-02-25")
+unclass(datas)
+datas <- as.numeric(datas)
+##################################3
+
+
+#######para calcular totais por estado
+PorEstado_regiao <- COVID19[-c(1:datas),]
+
+
+SC <- PorEstado_regiao %>% 
+  filter(estado == "SC")
+
+############ para calcular quantos linhas cortar do df SC
+datas <- today() - as.Date("2020-02-25")
+unclass(datas)
+datas <- as.numeric(datas)
+##################################3
+
+SC <- SC[1:datas,] %>% 
+  replace_na(list(municipio = "total_estado"))
+
+PorEstado_regiao$casosAcumulado <- as.numeric(PorEstado_regiao$casosAcumulado)
+PorEstado_regiao$obitosAcumulado <- as.numeric(PorEstado_regiao$obitosAcumulado)
+PorEstado <- PorEstado_regiao %>% 
+  group_by(estado) %>% 
+  filter(data == today()-1) %>% 
+  summarize(Total_casos = max(casosAcumulado),
+            Total_obitos = max(obitosAcumulado))
+
+
+
+#PorEstado_regiao$populacaoTCU2019 <- as.numeric(PorEstado_regiao$populacaoTCU2019)
+
+#PorEstado <- PorEstado_regiao %>% 
+#  group_by(estado) %>% 
+#  filter(municipio == "total_estado") %>% 
+#  summarize(acumulado = max(casosAcumulado))
+
+PorEstado <- PorEstado %>% 
+  mutate(estado1 = c("Acre","Alagoas","Amazonas","Amapá", "Bahia","Ceará","Distrito Federal","Espírito Santo","Goiás","Maranhão","Minas Gerais","Mato Grosso do Sul","Mato Grosso","Pará","Paraíba","Pernambuco","Piauí","Paraná","Rio de Janeiro","Rio Grande do Norte","Rondônia","Roraima","Rio Grande do Sul","Santa Catarina","Sergipe","São Paulo","Tocantins"))
+
+PorEstado <- PorEstado %>% 
+  left_join(pop, by = c("estado1"="estado"), suffix=c("_sigla",""))%>% 
+  mutate(normalizado = Total_casos * 100000 / população)
+
+PorEstado %>% 
+  select(estado1, Total_casos, normalizado) %>% 
+  arrange(desc(normalizado)) %>% 
+  knitr::kable(caption="Resumo dos casos por Estado - normalizado por 100 mil habitantes", digits=1)
+
+
+##############SC
+PorEstado_regiao$Recuperadosnovos <- as.numeric(PorEstado_regiao$Recuperadosnovos)
+PorEstado_regiao$emAcompanhamentoNovos <- as.numeric(PorEstado_regiao$emAcompanhamentoNovos)
+
+
+SC <- SC %>% 
+  mutate(casosNovos = casosAcumulado - lag(casosAcumulado)) %>% 
+  mutate(obitosNovos = obitosAcumulado - lag(obitosAcumulado)) %>% 
+  replace_na(list(casosNovos = 2, obitosNovos = 0))
+  
+######## Floripa e Blumenau
+
+#floripa <- PorEstado_regiao %>% 
+#  filter(estado == "SC") %>%  #municipio == "Florianópolis") %>% 
+#  group_by(data) %>% 
+#  summarize(casosAcumulados = sum(casosAcumulado),
+#            obitosAcumulados = sum(obitosAcumulado),
+#            Recuperadosnovos = sum(Recuperadosnovos),
+#            emAcompanhamentoNovos = sum(emAcompanhamentoNovos))
+
+#floripa <- floripa %>% 
+#  mutate(casosNovos = casosAcumulados - lag(casosAcumulados)) %>% 
+#  mutate(obitosNovos = obitosAcumulados - lag(obitosAcumulados)) %>% 
+#  replace_na(list(casosNovos = 30, obitosNovos = 0))
+
+#blumenau <- PorEstado_regiao %>% 
+#  filter(estado == "SC", municipio == "Blumenau") %>% 
+#  group_by(data) %>% 
+#  summarize(casosAcumulados = sum(casosAcumulado),
+#            obitosAcumulados = sum(obitosAcumulado),
+#            Recuperadosnovos = sum(Recuperadosnovos),
+#            emAcompanhamentoNovos = sum(emAcompanhamentoNovos))
+
+#blumenau <- blumenau %>% 
+#  mutate(casosNovos = casosAcumulados - lag(casosAcumulados)) %>% 
+#  mutate(obitosNovos = obitosAcumulados - lag(obitosAcumulados)) %>% 
+#  replace_na(list(casosNovos = 12, obitosNovos = 0))
+
+
+
+```
+
+
+## Casos reais vs casos simulados
+
+```{r echo=FALSE, results='asis'}
+library(dplyr)
+
+stellaNovos <- stella %>% select(dia, BrNovos)
+stellaAcum <- stella %>% select(dia, BrAcum)
+stellaObitosNovos <- stella %>% 
+  select(dia, ObitosNovos)
+stellaObitosAcum <- stella %>% 
+  select(dia, ObitosAcum)
+
+
+# tabelas
+i <- BrNovos %>% 
+  select(data) %>% 
+  summarise(count = n())
+
+BrNovos$dia <- 1:as.numeric(i)
+BrAcum$dia <- 1:as.numeric(i)
+
+BrNovos <- left_join(BrNovos, stellaNovos, by = "dia")
+
+colnames(BrNovos) <- c("data","real","dia","simulado")
+
+BrNovos <- BrNovos[, c(3,1,2,4)]
+
+
+
+BrAcum <- left_join(BrAcum, stellaAcum, by = "dia")
+colnames(BrAcum) <- c("data","real","dia","simulado") 
+
+BrAcum <- BrAcum[, c(3,1,2,4)]
+
+kable(tail(BrNovos, n = 10), caption="Casos novos reais e simulados", digits = 0)
+
+kable(tail(BrAcum, n = 10), caption="Casos acumulados reais e simulados", digits = 0)
+
+#Long Format Acumulados reais vs simulados
+
+Acum_long <- BrAcum %>% 
+  select(data, real, simulado) %>% 
+  melt(
+                id.vars=c("data"),
+                measure.vars=c("real", "simulado"),
+                # Name of the destination column that will identify the original
+                # column that the measurement came from
+                variable.name="cores",
+                value.name="Casos")
+
+ggplot(data=Acum_long, aes(x=data, y=Casos, color = cores)) +
+  geom_line(size=1)+ theme_bw()+ theme(legend.position="bottom")+ 
+  labs(y = "Casos", x='Data', title = 'Brasil - casos acumulados reais vs simulados')+
+  scale_x_date(date_labels = "%d/%m")
+
+#Long format casos novos reais vs simulados
+
+Novos_long <- BrNovos %>% 
+  select(data, real, simulado) %>% 
+  melt(
+                id.vars=c("data"),
+                measure.vars=c("real", "simulado"),
+                # Name of the destination column that will identify the original
+                # column that the measurement came from
+                variable.name="cores",
+                value.name="Casos")
+
+ggplot(data=Novos_long, aes(x=data, y=Casos, color = cores)) +
+  geom_line(size=1)+ theme_bw()+ theme(legend.position="bottom")+ 
+  labs(y = "Casos por dia", x='Data', title = 'Brasil - casos novos reais vs simulados')+
+  scale_x_date(date_labels = "%d/%m")
+
+```
+
+Com base nestes resultados, chegaremos aos 200.000 casos no dia:
+
+```{r, echo = FALSE}
+
+stellaAcum %>% 
+  filter(BrAcum > 190000, BrAcum < 200000) %>% 
+  kable(digits = 0)
+
+```
+
+Ou seja, no dia:
+
+```{r, echo = FALSE}
+kable(BrAcum[90,2] + 18)
+```
+
+Similarmente, chegaremos aos 400.000 casos no dia:
+
+```{r, echo = FALSE}
+stellaAcum %>% 
+  filter(BrAcum > 390000, BrAcum < 400000) %>% 
+  kable(digits = 0)
+
+kable(BrAcum[90,2] + 32)
+
+```
+
+Similarmente, chegaremos aos 800.000 casos no dia:
+
+```{r, echo = FALSE}
+stellaAcum %>% 
+  filter(BrAcum > 790000, BrAcum < 800000) %>% 
+  kable(digits = 0)
+
+kable(BrAcum[90,2] + 50)
+
+```
+
+Chegaremos aos 1.600.000 casos no dia:
+
+```{r, echo = FALSE}
+stellaAcum %>% 
+  filter(BrAcum > 1580000, BrAcum < 1620000) %>% 
+  kable(digits = 0)
+
+kable(BrAcum[90,2] + 74)
+
+```
+
+
+Chegaremos aos 3.200.000 casos no dia:
+
+```{r, echo = FALSE}
+stellaAcum %>% 
+  filter(BrAcum > 3190000, BrAcum < 3220000) %>% 
+  kable(digits = 0)
+
+(BrAcum[90,2] + 105)
+
+```
+
+## Projeção
+
+```{r, echo = FALSE}
+library(tidyquant)
+
+hoje <- BrNovos[as.numeric(i),1]
+
+## Projeção até 8 de Maio (dia 250)
+gg <- ggplot(data=stella, aes(x=dia, y=BrAcum/1000000), color="sim") +
+    geom_rect(xmin = 0,
+              xmax = as.numeric(i),
+              ymin = 0, ymax = 7,
+              fill = "#e5eeed", alpha = 1) +
+    annotate("text", x = 50, y = 3.5,
+             color = palette_light()[[1]], label = "Histórico") +
+    annotate("text", x = 200, y = 3.5,
+             color = palette_light()[[1]], label = "Projeção") +
+    annotate("text", x = 100, y = 1.5,
+             color = palette_light()[[1]], label = "08/Mai") +
+    annotate("text", x = 150, y = 1.5,
+             color = palette_light()[[1]], label = "27/Jun") +
+    annotate("text", x = 200, y = 1.5,
+             color = palette_light()[[1]], label = "16/Ago") +
+    annotate("text", x = 250, y = 1.5,
+             color = palette_light()[[1]], label = "05/Out") +
+  geom_line(size=1, color = "blue")+ theme_bw()+ 
+  labs(y = "Casos - milhões", x='Dia', title = "Brasil - Casos Acumulados - Projeção até 5-Out-2020 - dia 250") +
+  geom_vline(xintercept = 100, color = "red", linetype="dashed") +
+  geom_vline(xintercept = 150, color = "red", linetype="dashed") +  
+  geom_vline(xintercept = 200, color = "red", linetype="dashed") +
+  geom_vline(xintercept = 250, color = "red", linetype="dashed")
+
+gg + geom_point(data=BrAcum, aes(x=dia, y=real/1000000, color = "hist"), alpha=0.5)
+
+## Projeção até 27 de Junho - dia 150
+gg <- ggplot(data=stella[1:150,], aes(x=dia, y=BrAcum/100000, color = "sim")) +
+  geom_rect(xmin = 0,
+              xmax = as.numeric(i),
+              ymin = 0, ymax = 18,
+              fill = "#e5eeed", alpha = 1) +  
+  annotate("text", x = 50, y = 4.5,
+             color = "#000000", label = "Histórico") +
+  annotate("text", x = 100, y = 4.5,
+             color = "#000000", label = "8/Mai") +
+  geom_line(size=1)+ theme_bw()+  
+  labs(y = "Casos - x 100.000", x='dia', title = 'Brasil - Casos Acumulados - Projeção até 27-Jun-2020 - dia 150') +
+  geom_vline(xintercept = 100, color = "red", linetype="dashed")
+
+gg + geom_point(data=BrAcum, aes(x=dia, y=real/100000, color = "hist"), alpha=1)
+
+## Projeção até 8 de Maio (dia 100)
+gg <- ggplot(data=stella[1:100,], aes(x=dia, y=BrAcum/1000, color = "sim")) +
+  geom_rect(xmin = 0,
+              xmax = as.numeric(i),
+              ymin = 0, ymax = 200,
+              fill = "#e5eeed", alpha = 1) +  
+  annotate("text", x = 50, y = 100,
+             color = palette_light()[[1]], label = "Histórico") +
+  geom_line(size=1)+ theme_bw()+  
+  labs(y = "Casos - milhares", x='dia', title = 'Brasil - Casos Acumulados - Projeção até 8-Mai-2020 - dia 100') +
+  geom_vline(xintercept = 90, color = "red", linetype="dashed")
+
+gg + geom_point(data=BrAcum[1:100,], aes(x=dia, y=real/1000, color = "hist"), alpha=0.8)
+
+```
+
+
+
+```{r include=FALSE}
+
+#0. Importar dados do excel
+
+#q200 <- read_excel("stella_covid.xlsx", 
+#                      sheet = "Q200")
+
+#q150 <- read_excel("stella_covid.xlsx", 
+#                 sheet = "Q150")
+
+
+#q100 <- read_excel("stella_covid.xlsx", 
+#                 sheet = "Q100")
+
+#colnames(q200) <- c("dia","finfetados_200","casos_200","fmortes_200","mortes_200")
+#colnames(q150) <- c("dia","finfetados_150","casos_150","fmortes_150","mortes_150")
+#colnames(q100) <- c("dia","finfetados_100","casos_100","fmortes_100","mortes_100")
+
+
+#BAU <- stella
+#colnames(BAU) <- c("dia","finfetados_bau","casos_bau","fmortes_bau","mortes_bau")
+
+#colnames(cenarios) <- c("dia","finfetados","casos","fmortes","mortes")
+
+
+#2. Converter a formato longo
+
+#q200_long <- melt(q200,
+#                   id.vars=c("dia"),
+#                   measure.vars=c(2:5),
+#                   # Name of the destination column that will identify the original
+#                   # column that the measurement came from
+#                   variable.name="Variaveis",
+#                   value.name="Valor")
+
+#q150_long <- melt(q150,
+#                   id.vars=c("dia"),
+ #                  measure.vars=c(2:5),
+#                   # Name of the destination column that will identify the original
+#                   # column that the measurement came from
+#                   variable.name="Variaveis",
+#                   value.name="Valor")
+
+#q100_long <- melt(q100,
+#                   id.vars=c("dia"),
+#                   measure.vars=c(2:5),
+                   # Name of the destination column that will identify the original
+                   # column that the measurement came from
+ #                  variable.name="Variaveis",
+#                   value.name="Valor")
+
+#BAU_long <- melt(BAU,
+#                   id.vars=c("dia"),
+#                   measure.vars=c(2:5),
+                   # Name of the destination column that will identify the original
+                   # column that the measurement came from
+#                   variable.name="Variaveis",
+#                   value.name="Valor")
+
+#grupos <- rep(1:4, each=250)
+
+#grupos <- factor(grupos, levels = c(1,2,3,4), labels = c("casosNovos","casosAcum","mortesNovos", "mortesAcum"))
+
+#q200_long$grupos <- grupos
+#q150_long$grupos <- grupos
+#q100_long$grupos <- grupos
+#BAU_long$grupos <- grupos
+
+
+#cenarios_long <- BAU_long %>% 
+#  rbind(q100_long) %>% 
+#  rbind(q150_long) %>%
+#  rbind(q200_long)
+
+#cenarios_long <- cenarios_long[c(1,4,2,3)]
+
+```
+
+```{r cenarios, echo=FALSE, include=FALSE}
+
+#cenarios_long %>% 
+#  filter(grupos == "casosNovos") %>% 
+#  ggplot(aes(x=dia, y=Valor/1000, color=Variaveis))+
+#  geom_line() +
+#  labs(x="dia", y="Casos por dia (x1.000)", title="Cenários para casos novos por tempo de duração de quarentena", subtitle = "Cenários com 100, 150, 200 dias e bau (cenário base)") +
+#  facet_wrap(~Variaveis, ncol=2, scales = "free_y")+
+#  scale_color_hue(labels= c("bau","100","150","200"))+ 
+#  labs(color='Quarentena') 
+
+#cenarios_long %>% 
+#  filter(grupos == "casosAcum") %>% 
+#  ggplot(aes(x=dia, y=Valor/1000000, color=Variaveis))+
+#  geom_line() +
+#  labs(x="dia", y="Casos Acumulados (milhões)", title="Cenários para casos acumulados por tempo de duração de quarentena", subtitle = "Cenários com 100, 150, 200 dias e bau (cenário base)")+
+#  facet_wrap(~Variaveis, ncol=2, scales = "free_y")+
+#  scale_color_hue(labels= c("bau","100","150","200"))+ 
+#  labs(color='Quarentena') 
+
+#cenarios_long %>% 
+#  filter(grupos == "mortesNovos") %>% 
+#  ggplot(aes(x=dia, y=Valor/1000, color=Variaveis))+
+#  geom_line() +
+#  labs(x="dia", y="Óbitos por dia (x1.000)", title="Cenários para óbitos novos por tempo de duração de quarentena", subtitle = "Cenários com 100, 150, 200 dias e bau (cenário base)")+
+#  facet_wrap(~Variaveis, ncol=2, scales = "free_y")+
+#  scale_color_hue(labels= c("bau","100","150","200"))+ 
+#  labs(color='Quarentena') 
+
+
+#cenarios_long %>% 
+#  filter(grupos == "mortesAcum") %>% 
+#  ggplot(aes(x=dia, y=Valor/100000, color=Variaveis))+
+#  geom_line() +
+#  labs(x="dia", y="Óbitos Acumulados (x100.000)", title="Cenários para óbitos acumulados por tempo de duração de quarentena", subtitle = "Cenários com 100, 150, 200 dias e bau (cenário base)")+
+#  facet_wrap(~Variaveis, ncol=2, scales = "free_y") +
+#  scale_color_hue(labels= c("bau","100","150","200")) + 
+#  labs(color='Quarentena') 
+
+
+```
+
+
+## Óbitos reais vs simulados
+
+```{r, echo = FALSE}
+# tabelas
+
+ObitosNovos <- Brasil %>% 
+  select(data, obitosNovos)
+
+ObitosAcum <- Brasil %>% 
+  select(data, obitosAcumulado)
+
+ObitosNovos$dia <- 1:as.numeric(i)
+ObitosAcum$dia <- 1:as.numeric(i)
+
+ObitosNovos <- left_join(ObitosNovos, stellaObitosNovos, by = "dia")
+
+colnames(ObitosNovos) <- c("data","real","dia","simulado")
+
+ObitosNovos <- ObitosNovos[, c(3,1,2,4)]
+
+
+
+ObitosAcum <- left_join(ObitosAcum, stellaObitosAcum, by = "dia")
+colnames(ObitosAcum) <- c("data","real","dia","simulado") 
+
+ObitosAcum <- ObitosAcum[, c(3,1,2,4)]
+
+kable(tail(ObitosNovos, n = 10), caption="Obitos novos reais e simulados", digits = 0)
+
+kable(tail(ObitosAcum, n = 10), caption="Obitos acumulados reais e simulados", digits = 0)
+
+#Long Format Acumulados reais vs simulados
+
+ObitosAcum_long <- ObitosAcum %>% 
+  select(data, real, simulado) %>% 
+  melt(
+                id.vars=c("data"),
+                measure.vars=c("real", "simulado"),
+                # Name of the destination column that will identify the original
+                # column that the measurement came from
+                variable.name="cores",
+                value.name="Casos")
+
+ggplot(data=ObitosAcum_long, aes(x=data, y=Casos, color = cores)) +
+  geom_line(size=1)+ theme_bw()+ theme(legend.position="bottom")+ 
+  labs(y = "Obitos", x='Data', title = 'Brasil - óbitos acumulados reais vs simulados')+
+  scale_x_date(date_labels = "%d/%m")
+
+#Long format casos novos reais vs simulados
+
+ObitosNovos_long <- ObitosNovos %>% 
+  select(data, real, simulado) %>% 
+  melt(
+                id.vars=c("data"),
+                measure.vars=c("real", "simulado"),
+                # Name of the destination column that will identify the original
+                # column that the measurement came from
+                variable.name="cores",
+                value.name="Casos")
+
+ggplot(data=ObitosNovos_long, aes(x=data, y=Casos, color = cores)) +
+  geom_line(size=1)+ theme_bw()+ theme(legend.position="bottom")+ 
+  labs(y = "Óbitos por dia", x='Data', title = 'Brasil - óbitos novos reais vs simulados')+
+  scale_x_date(date_labels = "%d/%m")
+
+
+write_function <- function(data, sheetname) {
+  write.xlsx(
+  data,
+  "dados_BR.xlsx",
+  sheetName = sheetname,
+  col.names = TRUE,
+  row.names = FALSE,
+  append = FALSE,
+  showNA = TRUE,
+  password = NULL
+)
+  
+}
+
+
+#ObitosNovos %>% 
+#  select(dia,data,real) %>% 
+#  write_function("Obitos")
+
+```
+
+## Recuperados
+
+```{r recuperados, echo = FALSE}
+
+RecuperadosNovos <- Brasil %>% 
+  select(data, Recuperadosnovos)
+
+write_function(RecuperadosNovos, "Recuperados")
+
+RecuperadosNovos %>% 
+  filter(data > "2020-04-01") %>% 
+  ggplot(aes(data, Recuperadosnovos/1000))+
+  geom_line(size=1, color = "#ee5162")+
+  labs(title="Total de Recuperados (em milhares)")+
+  scale_x_date(date_labels = "%d/%m")+
+  theme(axis.title.y = element_blank(),
+        axis.title.x = element_blank())
+
+```
+
+
+
+## Métricas de ajuste
+
+### Ajuste dos casos acumulados, real vs simulado
+
+```{r, echo = FALSE}
+library(yardstick)
+metrica <- BrAcum %>% 
+  metrics(real,simulado) 
+
+metrica$.estimator <- NULL
+names(metrica) <- c("Métrica", "Índice")
+knitr::kable(metrica, digits = 1, caption = "Ajuste dos casos acumulados, real vs simulado")
+```
+
+
+### Ajuste dos casos novos, real vs simulado
+```{r, echo = FALSE}
+metricaNovos <- BrNovos %>% 
+  metrics(real,simulado)
+
+metricaNovos$.estimator <- NULL
+names(metricaNovos) <- c("Métrica", "Indice")
+knitr::kable(metricaNovos, digits = 1, caption = "Ajuste dos casos novos, real vs simulado")
+```
+
+
+### Ajuste dos óbitos acumulados, real vs simulado
+
+```{r, echo = FALSE}
+#Para obitos acumulados
+metricaObitosAcum <- ObitosAcum %>% 
+  metrics(real,simulado) 
+
+metricaObitosAcum$.estimator <- NULL
+names(metricaObitosAcum) <- c("Métrica", "Índice")
+knitr::kable(metricaObitosAcum, digits = 2, caption = "Ajuste dos óbitos acumulados, real vs simulado")
+```
+
+
+### Ajuste dos óbitos novos, real vs. simulado
+
+```{r, echo = FALSE}
+
+#para obitos novos
+metricaObitosNovos <- ObitosNovos %>% 
+  metrics(real,simulado) 
+
+metricaObitosNovos$.estimator <- NULL
+names(metricaObitosNovos) <- c("Métrica", "Índice")
+knitr::kable(metricaObitosNovos, digits = 2, caption = "Ajuste dos óbitos novos, real vs simulado")
+
+```
+
+
+## 2. SC - Santa Catarina
+
+```{r, echo = FALSE}
+
+SC$data <- as.Date(SC$data, format = c("%Y-%m-%d"))
+#floripa$data <- as.Date(floripa$data, format = c("%Y-%m-%d"))
+#blumenau$data <- as.Date(blumenau$data, format = c("%Y-%m-%d"))
+
+#######aumentar o numero de dias anteriores
+
+SC <- SC %>% 
+  select(data, casosAcumulado, obitosAcumulado, casosNovos, obitosNovos)
+
+SC$casosNovos <- as.numeric(SC$casosNovos)
+SC$obitosNovos <- as.numeric(SC$obitosNovos)
+
+data <- seq(as.Date("2020-01-30"), by=1, len=43)
+casosAcumulado <- rep(0,43)
+obitosAcumulado <- rep(0,43)
+casosNovos <- rep(0,43)
+obitosNovos <- rep(0,43)
+
+SC_long <- data.frame(data, casosAcumulado, obitosAcumulado, casosNovos, obitosNovos)
+
+SC <- SC_long %>% 
+  bind_rows(SC)
+
+```
+
+
+
+```{r, echo=FALSE}
+SC_long <- melt(SC,
+                 # ID variables - all the variables to keep but not split apart on
+                 id.vars=c("data"),
+                 # The source columns
+                 measure.vars=c("casosNovos", "casosAcumulado","obitosNovos","obitosAcumulado"),
+                 # Name of the destination column that will identify the original
+                 # column that the measurement came from
+                 variable.name="Casos",
+                 value.name="SC")
+
+SC_long$data <- as.Date(SC_long$data, format = "%d/%m/%Y")
+
+q <- ggplot(data=SC_long, aes(x=data, y=SC, color=Casos)) +
+  geom_line(size=1)+ theme(legend.position="bottom")+ 
+  labs(title = "Santa Catarina")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m") +
+  facet_wrap(~Casos, scales = "free_y")
+
+q
+```
+
+### Valores por separado
+
+```{r, echo = FALSE}
+library(scales)
+SC$data <- as.Date(SC$data, format = "%d/%m/%Y")
+
+NovosSC <- ggplot(data=SC, aes(x=data, y=casosNovos)) +
+  geom_line(size =1, color = "steelblue") + theme_bw() +
+  labs(title = "Santa Catarina - casos novos")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m") +
+  geom_vline(xintercept = as.numeric(SC$data[c(48,64,67,74,84,93,102)]), color = "red", linetype="dashed") +
+  annotate("text", x = ymd("2020-03-17"), y = 300,label = "In Quarentena")+
+  annotate("text", x = ymd("2020-04-02"), y = 300,label = "Const Civil")+
+  annotate("text", x = ymd("2020-04-05"), y = 350,label = "Autonomos")+
+  annotate("text", x = ymd("2020-04-22"), y = 300,label = "Shoppings")+
+  annotate("text", x = ymd("2020-04-12"), y = 250,label = "Páscoa") +
+  annotate("text", x = ymd("2020-05-01"), y = 250,label = "DiaTrabalhador")+
+  annotate("text", x = ymd("2020-05-10"), y = 500,label = "Dia_das_Mães")
+
+AcumSC <- ggplot(data=SC, aes(x=data, y=casosAcumulado)) +
+  geom_line(size=1, color = "steelblue") + theme_bw() +
+  labs(title = "Santa Catarina - casos acumulados")+ labs(x='Dia')+
+  scale_x_date(date_labels = "%d/%m") +
+  geom_vline(xintercept = as.numeric(SC$data[c(48,64,67,74,84,93,102)]), color = "red", linetype="dashed") +  
+  annotate("text", x = ymd("2020-03-17"), y = 1000,label = "In Quarentena")+
+  annotate("text", x = ymd("2020-04-02"), y = 1500,label = "Const Civil")+
+  annotate("text", x = ymd("2020-04-05"), y = 2000,label = "Autonomos")+
+  annotate("text", x = ymd("2020-04-22"), y = 1500, label = "Shoppings")+
+  annotate("text", x = ymd("2020-04-12"), y = 1000,label = "Páscoa")+
+  annotate("text", x = ymd("2020-05-01"), y = 1000,label = "DiaTrabalhador")+
+  annotate("text", x = ymd("2020-05-10"), y = 2000,label = "Dia_das_Mães")
+
+NovosSC
+AcumSC
+```
+
+
+
+```{r, florianopolis, echo = FALSE}
+
+#######aumentar o numero de dias anteriores
+
+#data <- seq(as.Date("2020-01-30"), by=1, len=58)
+#casosAcumulados <- rep(0,58)
+#obitosAcumulados <- rep(0,58)
+#casosNovos <- rep(0,58)
+#obitosNovos <- rep(0,58)
+
+#floripa_long <- data.frame(data, casosAcumulados, obitosAcumulados, casosNovos, obitosNovos)
+
+#floripa <- floripa_long %>% 
+#  bind_rows(floripa)
+
+#blumenau <- floripa_long %>% 
+#  bind_rows(blumenau)
+
+#floripa_long <- melt(floripa,
+                 # ID variables - all the variables to keep but not split apart on
+#                 id.vars=c("data"),
+                 # The source columns
+ #                measure.vars=c("casosNovos", "casosAcumulados","obitosNovos","obitosAcumulados"),
+                 # Name of the destination column that will identify the original
+                 # column that the measurement came from
+#                 variable.name="Casos",
+#                 value.name="SC")
+
+#floripa_long$data <- as.Date(floripa_long$data, format = "%d/%m/%Y")
+
+#ggplot(data=floripa_long, aes(x=data, y=SC, color=Casos)) +
+#  geom_line(size=1)+ theme(legend.position="bottom")+ 
+#  labs(title = "Florianópolis")+ labs(x='Dia')+
+#  scale_x_date(date_labels = "%d/%m") +
+#  facet_wrap(~Casos, scales = "free_y")
+#### Blumenau
+#blumenau_long <- melt(blumenau,
+                 # ID variables - all the variables to keep but not split apart on
+ #                id.vars=c("data"),
+                 # The source columns
+#                 measure.vars=c("casosNovos", "casosAcumulados","obitosNovos","obitosAcumulados"),
+                 # Name of the destination column that will identify the original
+                 # column that the measurement came from
+#                 variable.name="Casos",
+#                 value.name="SC")
+
+#blumenau_long$data <- as.Date(blumenau_long$data, format = "%d/%m/%Y")
+
+#ggplot(data=blumenau_long, aes(x=data, y=SC, color=Casos)) +
+#  geom_line(size=1)+ theme(legend.position="bottom")+ 
+#  labs(title = "Blumenau")+ labs(x='Dia')+
+#  scale_x_date(date_labels = "%d/%m") +
+#  facet_wrap(~Casos, scales = "free_y")
+
+```
+
+
+```{r, echo = FALSE}
+library(devtools)
+#devtools::install_github(c("duncantl/XMLRPC", "duncantl/RWordPress"))
+#devtools:::install_github("duncantl/XMLRPC")
+library(RWordPress)
+library(knitr)
+library(XMLRPC)
+library(XML)
+library(RCurl)
+# Tell RWordPress how to set the user name, password, and URL for your WordPress site.
+
+options(WordpressLogin = c(admin = 'Muriona@1'),
+       WordpressURL = 'http://sinergia.ufsc.br/xmlrpc.php')
+
+# Tell knitr to create the html code and upload it to your WordPress site
+
+knit2wp('Covid19-2.Rmd', title = 'Covid-19 - Brasil - atualizado 23/08',  categories = c('SystemDynamics','Simulation'), mt_keywords = c('knitr', 'wordpress'), publish = FALSE)
+
+```
+

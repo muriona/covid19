@@ -1,0 +1,667 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>COVID19-atualizado</name>
+		<uuid>67dc533f-3a76-42d9-bb4c-b5b00181c10f</uuid>
+		<vendor>isee systems, inc.</vendor>
+		<product version="1.7.1" isee:build_number="1576" isee:saved_by_v1="true" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs isee:simulation_delay="0.00501672" method="Euler" time_units="Days" isee:instantaneous_flows="false">
+		<start>1</start>
+		<stop>299</stop>
+		<dt reciprocal="true">4</dt>
+	</sim_specs>
+	<isee:prefs show_module_prefix="true" live_update_on_drag="true" show_restore_buttons="false" layer="model" interface_scale_ui="true" interface_max_page_width="10000" interface_max_page_height="10000" interface_min_page_width="0" interface_min_page_height="0" saved_runs="5" keep="false" rifp="true"/>
+	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" observer_start_page="home_page" enabled="false"/>
+	<isee:time_formats default_format="Builtin">
+		<isee:time_format name="Builtin" type="adaptive"/>
+	</isee:time_formats>
+	<default_format precision="0.01"/>
+	<data>
+		<export frequency="on_demand" resource="/Users/mauricio/Dropbox/mauricio/10. R Studio/2020-Covid19/stella_covid.xlsx" type="Excel" worksheet="Q100" precomputed="false" isee:format="numbers">
+			<table name="1" use_settings="true"/>
+		</export>
+	</data>
+	<model_units>
+		<unit name="People">
+			<eqn/>
+			<alias>person</alias>
+			<alias>persons</alias>
+		</unit>
+		<unit name="Dimensionless">
+			<eqn>1</eqn>
+			<alias>dmnl</alias>
+			<alias>unitless</alias>
+			<alias>fraction</alias>
+		</unit>
+		<unit name="Days">
+			<eqn/>
+			<alias>day</alias>
+		</unit>
+	</model_units>
+	<model>
+		<variables>
+			<stock name="População\nSuscetivel">
+				<eqn>210E+06</eqn>
+				<format scale_by="1000000"/>
+				<inflow>saindo_da_quarentena</inflow>
+				<outflow>Fluxo_de_Infecção</outflow>
+				<outflow>quarentena</outflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<stock name="População\nInfetada">
+				<eqn>1</eqn>
+				<format scale_by="1000000"/>
+				<inflow>Fluxo_de_Infecção</inflow>
+				<outflow>Fluxo_de_recuperação</outflow>
+				<outflow>Fluxo_de_internações</outflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<flow name="Fluxo de Infecção">
+				<eqn>taxa_de_contato*infectividade*População_Suscetivel*População_Total_Infetada/População_Total</eqn>
+				<format scale_by="1000"/>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="taxa de contato">
+				<eqn>1.41</eqn>
+				<units>1/Days</units>
+			</aux>
+			<aux name="População\nTotal">
+				<eqn>210e+06</eqn>
+				<format scale_by="1000000"/>
+				<units>People</units>
+			</aux>
+			<aux name="infectividade">
+				<eqn>0.18</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<stock name="População\nRecuperada">
+				<eqn>0</eqn>
+				<format scale_by="1000000"/>
+				<inflow>Fluxo_de_recuperação</inflow>
+				<inflow>Fluxo_de_recuperação_população_internada</inflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<flow name="Fluxo de\nrecuperação">
+				<eqn>População_Infetada/tempo_médio_de_duração_da_doença</eqn>
+				<format scale_by="1000000"/>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="tempo médio de\nduração da doença">
+				<eqn>15</eqn>
+				<format precision="1"/>
+				<units>Days</units>
+			</aux>
+			<aux name="historico\ncasosNovos">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="1" max="200"/>
+					<yscale min="0" max="35000"/>
+					<ypts>0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,1,4,6,6,6,0,9,18,25,21,23,79,34,57,137,193,283,224,418,345,310,232,482,502,486,353,323,1138,1117,1076,1146,1222,852,926,1661,2210,1930,1781,1089,1442,1261,1832,3058,2105,3257,2917,2055,1927,2498,2678,3735,3503,5514,3379,4613,5385,6276,7218,5919,5097,4751,6633,6935,10503,9888,10222,10611,6760,5632,9258,11385,13944,15305,14919,7938,13140,17408,19951,18508,20803,16508,15813,11687,16324,20599,26417,26928,33274,15760,12247,28936,28633,30925,30830,27075,18912,15654,32091,32913,30412,25982,21704,17110,20647,34918,32188,22765,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</ypts>
+				</gf>
+			</aux>
+			<aux name="taxa de\nobitos">
+				<eqn>0.26</eqn>
+				<units>1/day</units>
+			</aux>
+			<stock name="População\ninternada">
+				<eqn>0</eqn>
+				<format scale_by="1000000"/>
+				<inflow>Fluxo_de_internações</inflow>
+				<outflow>Fluxo_de_mortes</outflow>
+				<outflow>Fluxo_de_recuperação_população_internada</outflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<flow name="Fluxo de internações">
+				<eqn>População_Infetada*taxa_de_internações</eqn>
+				<format scale_by="1000"/>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="taxa de\ninternações">
+				<eqn>0.06</eqn>
+				<units>1/day</units>
+			</aux>
+			<flow name="Fluxo de mortes">
+				<eqn>População_internada*taxa_de_obitos</eqn>
+				<format scale_by="1000000"/>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<stock name="Total\nObitos">
+				<eqn>0</eqn>
+				<format scale_by="1000"/>
+				<inflow>Fluxo_de_mortes</inflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<aux name="Letalidade">
+				<eqn>100*Total_Obitos/casos_confirmados</eqn>
+			</aux>
+			<aux name="casos confirmados">
+				<eqn>População_Infetada + População_Recuperada + População_internada + Total_Obitos</eqn>
+				<isee:summing/>
+			</aux>
+			<flow name="Fluxo de\nrecuperação\npopulação internada">
+				<eqn>População_internada*taxa_de_recuperação_população_internada</eqn>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="População Total\nInfetada">
+				<eqn>População_Infetada + População_internada</eqn>
+				<isee:summing/>
+			</aux>
+			<aux name="taxa de recuperação\npopulação internada">
+				<eqn>0.86</eqn>
+				<units>1/day</units>
+			</aux>
+			<flow name="quarentena">
+				<eqn>População_Suscetivel*inicio_da_quarentena</eqn>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="taxa de\nquarentena">
+				<eqn>0.01</eqn>
+				<units>1/day</units>
+			</aux>
+			<aux name="inicio\nda quarentena">
+				<eqn>STEP(taxa_de_quarentena, 47)</eqn>
+				<format precision="0.0001"/>
+			</aux>
+			<stock name="População\nem Quarentena">
+				<eqn>0</eqn>
+				<inflow>quarentena</inflow>
+				<outflow>saindo_da_quarentena</outflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<flow name="saindo da\nquarentena">
+				<eqn>População_em_Quarentena*taxa_de_retorno_quarentena</eqn>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="fim da quarentena">
+				<eqn>75</eqn>
+				<format precision="1"/>
+				<units>day</units>
+			</aux>
+			<aux name="taxa de retorno\nquarentena">
+				<eqn>STEP(taxa_de_quarentena, fim_da_quarentena)</eqn>
+			</aux>
+			<stock name="Historico\ncasosAcum">
+				<eqn>0</eqn>
+				<inflow>Flow_1</inflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<flow name="Flow 1">
+				<eqn>historico_casosNovos</eqn>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="taxa2">
+				<eqn>0.001</eqn>
+				<format precision="0.0001"/>
+			</aux>
+			<aux name="historico\nObitos">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="1" max="299"/>
+					<yscale min="0" max="100"/>
+					<ypts>0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,2,5,7,7,9,12,11,20,15,22,22,23,42,40,58,60,73,54,67,114,133,141,115,68,99,105,204,204,188,217,206,115,113,166,165,407,357,346,189,338,474,449,435,428,395,301,296,600,614,611,749,732,496,396,881,749,844,824,816,485,674,1179,888,1188,999,967,653,807,1039,1086,1156,1124,956,480,623,1262,1349,1473,1005,904,525,679,1272,1274,1239,909,892,612,627,1282,1269,1238,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</ypts>
+				</gf>
+			</aux>
+			<stock name="Historico\nObitosAcum">
+				<eqn>0</eqn>
+				<inflow>Flow_2</inflow>
+				<non_negative/>
+				<units>People</units>
+			</stock>
+			<flow name="Flow 2">
+				<eqn>historico_Obitos</eqn>
+				<non_negative/>
+				<units>People/Days</units>
+			</flow>
+			<aux name="historico\nRecuperadosAcum">
+				<eqn>TIME</eqn>
+				<gf>
+					<xscale min="1" max="299"/>
+					<yscale min="0" max="600000"/>
+					<ypts>0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22130,22991,24325,25318,26573,27655,29160,30152,31142,32544,34132,35935,38039,40937,42991,45186,48221,51370,55350,59297,61685,64957,67384,72597,78424,79479,84970,89672,94122,100459,106794,116683,125960,135430,142587,149911,153833,158593,166647,177604,189476,200892,206555,211080,223638,238617,254963,266940,277149,283952,290040,311064,325395,345595,365063,379245,388492,412252,441729,463474,482102,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0</ypts>
+				</gf>
+			</aux>
+			<isee:dependencies>
+				<var name="Fluxo_de_Infecção">
+					<in>População_Suscetivel</in>
+					<in>taxa_de_contato</in>
+					<in>infectividade</in>
+					<in>População_Total</in>
+					<in>População_Total_Infetada</in>
+				</var>
+				<var name="Fluxo_de_recuperação">
+					<in>tempo_médio_de_duração_da_doença</in>
+					<in>População_Infetada</in>
+				</var>
+				<var name="Fluxo_de_internações">
+					<in>taxa_de_internações</in>
+					<in>População_Infetada</in>
+				</var>
+				<var name="Fluxo_de_mortes">
+					<in>População_internada</in>
+					<in>taxa_de_obitos</in>
+				</var>
+				<var name="Letalidade">
+					<in>casos_confirmados</in>
+					<in>Total_Obitos</in>
+				</var>
+				<var name="casos_confirmados">
+					<in>População_Infetada</in>
+					<in>População_Recuperada</in>
+					<in>População_internada</in>
+					<in>Total_Obitos</in>
+				</var>
+				<var name="Fluxo_de_recuperação_população_internada">
+					<in>taxa_de_recuperação_população_internada</in>
+					<in>População_internada</in>
+				</var>
+				<var name="População_Total_Infetada">
+					<in>População_Infetada</in>
+					<in>População_internada</in>
+				</var>
+				<var name="quarentena">
+					<in>População_Suscetivel</in>
+					<in>inicio_da_quarentena</in>
+				</var>
+				<var name="inicio_da_quarentena">
+					<in>taxa_de_quarentena</in>
+				</var>
+				<var name="saindo_da_quarentena">
+					<in>taxa_de_retorno_quarentena</in>
+					<in>População_em_Quarentena</in>
+				</var>
+				<var name="taxa_de_retorno_quarentena">
+					<in>fim_da_quarentena</in>
+					<in>taxa_de_quarentena</in>
+				</var>
+				<var name="Flow_1">
+					<in>historico_casosNovos</in>
+				</var>
+				<var name="Flow_2">
+					<in>historico_Obitos</in>
+				</var>
+			</isee:dependencies>
+		</variables>
+		<views>
+			<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+				<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+				<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+					<isee:series_styles>
+						<isee:series_style color="blue" thickness="1"/>
+						<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF7F00" thickness="1"/>
+						<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF007F" thickness="1"/>
+						<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#C8C8C8" thickness="1"/>
+					</isee:series_styles>
+				</graph>
+				<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="beginning" report_flows="instantaneous" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				<button color="black" background="#E0E0E0" font_size="12pt" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595"/>
+				<isee:annotation color="black" background="#E0E0E0" font_size="12pt" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595" popup_background_color="#FFFECF"/>
+				<slider color="black" background="#E0E0E0" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" vertical="false" isee:always_show_hover_tip="false" input_expands="true" input_width="100"/>
+				<isee:sim_speed_slider color="black" background="white"/>
+				<isee:time_slider color="black" background="white"/>
+				<isee:pie_input color="black" background="white" font_size="12pt" legend_position="bottom" isee:transparent="false"/>
+				<knob color="#66CC66" background="#E0E0E0" font_size="12pt" label_side="bottom" wrap_title="true"/>
+				<numeric_input color="black" background="#E0E0E0" font_size="12pt" label_side="left" wrap_title="true" input_expands="false" input_width="100"/>
+				<switch color="black" background="#E0E0E0" font_size="12pt" label_side="top" wrap_title="true" isee:appearance="switch"/>
+				<options color="black" background="white" appearance="radio-buttons" arrangement="vertical"/>
+				<graphical_input color="black" background="#E0E0E0" font_size="12pt"/>
+				<group_input color="black" background="#E0E0E0" font_size="12pt"/>
+				<lamp color="black" background="white" font_size="9pt"/>
+				<gauge color="black" background="white" font_size="9pt" needle_color="#F09F72" bar_color="#EEEEEE" bar_progress_color="black" appearance="radial" num_major_ticks="11" num_minor_ticks="11" show_numeric_value="true"/>
+				<isee:spatial_map color="black" background="white" font_size="12pt"/>
+				<isee:animation_object color="black" background="white" font_size="12pt"/>
+			</style>
+			<view isee:show_pages="false" page_width="768" page_height="588" isee:page_cols="2" isee:page_rows="2" isee:scroll_x="138" isee:scroll_y="69" isee:popup_graphs_are_comparative="true" type="stock_flow">
+				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+					<stock color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
+						<shape type="rectangle" width="45" height="35"/>
+					</stock>
+					<flow color="blue" background="white" font_color="blue" font_size="9pt" label_side="bottom"/>
+					<module color="blue" background="white" font_color="blue" font_size="9pt" label_side="top">
+						<shape type="rectangle" width="55" height="45"/>
+					</module>
+					<aux color="blue" background="white" font_color="blue" font_size="9pt" label_side="bottom">
+						<shape type="circle" radius="18"/>
+					</aux>
+					<group color="red" background="white" font_color="red" font_size="9pt"/>
+					<connector color="#FF007F" background="white" font_color="#FF007F" font_size="9pt" isee:thickness="1"/>
+					<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+					<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+						<isee:series_styles>
+							<isee:series_style color="blue" thickness="1"/>
+							<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF7F00" thickness="1"/>
+							<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF007F" thickness="1"/>
+							<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#C8C8C8" thickness="1"/>
+						</isee:series_styles>
+					</graph>
+					<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="beginning" report_flows="instantaneous" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				</style>
+				<stock label_side="center" x="183.5" y="78.5" width="104" height="40" name="População\nSuscetivel"/>
+				<stock label_side="center" x="398.5" y="74.5" width="104" height="40" name="População\nInfetada"/>
+				<flow x="337" y="98.5" name="Fluxo de Infecção">
+					<pts>
+						<pt x="287.5" y="98.5"/>
+						<pt x="398.5" y="98.5"/>
+					</pts>
+				</flow>
+				<aux x="265.5" y="169" name="taxa de contato"/>
+				<aux x="320" y="191" name="População\nTotal"/>
+				<aux x="356" y="238" name="infectividade"/>
+				<connector uid="1" angle="35.1807">
+					<from>População_Suscetivel</from>
+					<to>Fluxo_de_Infecção</to>
+				</connector>
+				<connector uid="2" angle="44.5965">
+					<from>taxa_de_contato</from>
+					<to>Fluxo_de_Infecção</to>
+				</connector>
+				<connector uid="3" angle="97.756">
+					<from>infectividade</from>
+					<to>Fluxo_de_Infecção</to>
+				</connector>
+				<connector uid="4" angle="79.5862">
+					<from>População_Total</from>
+					<to>Fluxo_de_Infecção</to>
+				</connector>
+				<stacked_container uid="5" x="926" y="204" visible_index="2">
+					<graph x="751" y="79" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" title="Graph" isee:fill_intensity="0.1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="red" pen_width="2" index="0" show_y_axis="true">
+							<entity name="População_Infetada"/>
+						</plot>
+						<plot color="fuchsia" pen_width="2" index="1" show_y_axis="true">
+							<entity name="População_Recuperada"/>
+						</plot>
+					</graph>
+					<graph x="751" y="79" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" title="Graph" isee:fill_intensity="0.1" to="150" from="1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="red" pen_style="dotted" pen_width="2" index="0" show_y_axis="true">
+							<entity name="historico_casosNovos"/>
+							<scale min="0" max="35000"/>
+						</plot>
+						<plot color="blue" pen_width="2" index="1" show_y_axis="true">
+							<entity name="Fluxo_de_Infecção"/>
+							<scale min="0" max="5000"/>
+						</plot>
+					</graph>
+					<graph x="751" y="79" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="4" num_x_labels="4" num_y_labels="5" title="Graph" isee:fill_intensity="0.1" to="150" from="1" left_axis_multi_scale="false" left_axis_auto_scale="false" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="red" pen_style="dotted" pen_width="2" index="0" show_y_axis="true">
+							<entity name="casos_confirmados"/>
+							<scale min="0" max="1200000"/>
+						</plot>
+						<plot color="blue" pen_width="2" index="1" show_y_axis="true">
+							<entity name="Historico_casosAcum"/>
+							<scale min="0" max="1200000"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<stock label_side="center" x="613.5" y="78.5" width="104" height="40" name="População\nRecuperada"/>
+				<flow x="552" y="98.5" name="Fluxo de\nrecuperação">
+					<pts>
+						<pt x="502.5" y="98.5"/>
+						<pt x="613.5" y="98.5"/>
+					</pts>
+				</flow>
+				<aux x="595.286" y="139" name="tempo médio de\nduração da doença"/>
+				<connector uid="6" angle="132.184">
+					<from>tempo_médio_de_duração_da_doença</from>
+					<to>Fluxo_de_recuperação</to>
+				</connector>
+				<aux x="241" y="369" name="historico\ncasosNovos"/>
+				<stacked_container uid="7" x="926" y="463" visible_index="2">
+					<graph x="751" y="338" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" title="Graph" isee:fill_intensity="0.1" to="150" from="1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="blue" pen_width="2" index="0" show_y_axis="true">
+							<entity name="Total_Obitos"/>
+							<scale min="0" max="60000"/>
+						</plot>
+						<plot color="red" pen_style="dotted" pen_width="2" index="1" show_y_axis="true">
+							<entity name="Historico_ObitosAcum"/>
+							<scale min="0" max="60000"/>
+						</plot>
+					</graph>
+					<graph x="751" y="338" width="350" height="250" type="time_series" isee:points_only="false" show_grid="true" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="5" num_x_labels="5" num_y_labels="5" title="Graph" isee:fill_intensity="0.1" to="120" from="1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="blue" pen_width="1" index="0" show_y_axis="true">
+							<entity name="Letalidade"/>
+							<scale min="0" max="10"/>
+						</plot>
+					</graph>
+					<graph x="751" y="338" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" title="Graph" isee:fill_intensity="0.1" to="150" from="1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="red" pen_style="dotted" pen_width="2" index="0" show_y_axis="true">
+							<entity name="População_Recuperada"/>
+						</plot>
+						<plot color="blue" pen_width="2" index="1" show_y_axis="true">
+							<entity name="historico_RecuperadosAcum"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<aux x="539" y="306.893" name="taxa de\nobitos"/>
+				<stock label_side="center" x="397.286" y="229" width="104.714" height="29.2857" name="População\ninternada"/>
+				<flow x="454" y="165.75" name="Fluxo de internações">
+					<pts>
+						<pt x="454" y="114.5"/>
+						<pt x="454" y="229"/>
+					</pts>
+				</flow>
+				<aux x="396" y="143" name="taxa de\ninternações"/>
+				<connector uid="8" angle="338.583">
+					<from>taxa_de_internações</from>
+					<to>Fluxo_de_internações</to>
+				</connector>
+				<connector uid="9" angle="311.566">
+					<from>População_Infetada</from>
+					<to>Fluxo_de_internações</to>
+				</connector>
+				<flow x="454" y="306.893" name="Fluxo de mortes">
+					<pts>
+						<pt x="454" y="258.286"/>
+						<pt x="454" y="367.5"/>
+					</pts>
+				</flow>
+				<connector uid="10" angle="223.21">
+					<from>População_internada</from>
+					<to>Fluxo_de_mortes</to>
+				</connector>
+				<connector uid="11" angle="180">
+					<from>taxa_de_obitos</from>
+					<to>Fluxo_de_mortes</to>
+				</connector>
+				<stock label_side="center" x="401.5" y="367.5" width="100" height="29" name="Total\nObitos"/>
+				<connector uid="12" angle="12.8852">
+					<from>População_Infetada</from>
+					<to>Fluxo_de_recuperação</to>
+				</connector>
+				<aux x="331" y="505.5" name="Letalidade"/>
+				<stacked_container uid="13" x="376.5" y="428" width="369" height="415">
+					<table x="376.5" y="428" width="369" height="415" isee:export_name="1" isee:mark_for_export="true" title="Table">
+						<item type="time"/>
+						<item>
+							<entity name="Fluxo_de_Infecção"/>
+						</item>
+						<item>
+							<entity name="casos_confirmados"/>
+						</item>
+						<item>
+							<entity name="Fluxo_de_mortes"/>
+						</item>
+						<item>
+							<entity name="Total_Obitos"/>
+						</item>
+					</table>
+				</stacked_container>
+				<aux x="557" y="31" name="casos confirmados"/>
+				<flow x="587.071" y="243.643" name="Fluxo de\nrecuperação\npopulação internada">
+					<pts>
+						<pt x="502" y="243.643"/>
+						<pt x="672.143" y="243.643"/>
+						<pt x="672.143" y="118.5"/>
+					</pts>
+				</flow>
+				<aux x="328" y="18.8571" width="18" height="18" name="População Total\nInfetada"/>
+				<connector uid="14" angle="262.801">
+					<from>População_Total_Infetada</from>
+					<to>Fluxo_de_Infecção</to>
+				</connector>
+				<aux x="672.071" y="281" name="taxa de recuperação\npopulação internada"/>
+				<connector uid="15" angle="156.275">
+					<from>taxa_de_recuperação_população_internada</from>
+					<to>Fluxo_de_recuperação_população_internada</to>
+				</connector>
+				<connector uid="16" angle="18.9906">
+					<from>População_internada</from>
+					<to>Fluxo_de_recuperação_população_internada</to>
+				</connector>
+				<connector uid="17" angle="355.236">
+					<from>
+						<alias uid="18"/>
+					</from>
+					<to>Letalidade</to>
+				</connector>
+				<connector uid="19" angle="348.486">
+					<from>
+						<alias uid="20"/>
+					</from>
+					<to>Letalidade</to>
+				</connector>
+				<flow x="178.25" y="271" name="quarentena">
+					<pts>
+						<pt x="198" y="118.5"/>
+						<pt x="198" y="271"/>
+						<pt x="146.5" y="271"/>
+					</pts>
+				</flow>
+				<aux x="286.5" y="294.643" name="taxa de\nquarentena"/>
+				<connector uid="21" angle="251.64">
+					<from>População_Suscetivel</from>
+					<to>quarentena</to>
+				</connector>
+				<aux x="244" y="238" name="inicio\nda quarentena"/>
+				<connector uid="22" angle="104.673">
+					<from>taxa_de_quarentena</from>
+					<to>inicio_da_quarentena</to>
+				</connector>
+				<stock label_side="center" x="66.5" y="252.643" width="80" height="38" name="População\nem Quarentena"/>
+				<flow x="125.25" y="102" name="saindo da\nquarentena">
+					<pts>
+						<pt x="79" y="252.643"/>
+						<pt x="79" y="102"/>
+						<pt x="183.5" y="102"/>
+					</pts>
+				</flow>
+				<aux x="49" y="31" name="fim da quarentena"/>
+				<aux x="40" y="106" name="taxa de retorno\nquarentena"/>
+				<connector uid="23" angle="234.462">
+					<from>fim_da_quarentena</from>
+					<to>taxa_de_retorno_quarentena</to>
+				</connector>
+				<connector uid="24" angle="106.699">
+					<from>
+						<alias uid="25"/>
+					</from>
+					<to>taxa_de_retorno_quarentena</to>
+				</connector>
+				<connector uid="26" angle="52.4314">
+					<from>taxa_de_retorno_quarentena</from>
+					<to>saindo_da_quarentena</to>
+				</connector>
+				<connector uid="27" angle="75.6912">
+					<from>População_em_Quarentena</from>
+					<to>saindo_da_quarentena</to>
+				</connector>
+				<stock label_side="center" x="214.643" y="599.643" width="60" height="35" name="Historico\ncasosAcum"/>
+				<flow x="180.893" y="620.714" name="Flow 1">
+					<pts>
+						<pt x="147.143" y="620.714"/>
+						<pt x="214.643" y="620.714"/>
+					</pts>
+				</flow>
+				<connector uid="28" angle="228.865">
+					<from>historico_casosNovos</from>
+					<to>Flow_1</to>
+				</connector>
+				<stacked_container uid="29" x="926" y="727.143" visible_index="1">
+					<graph x="751" y="602.143" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" title="Graph" isee:fill_intensity="0.1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="blue" pen_width="2" index="0" show_y_axis="true">
+							<entity name="casos_confirmados"/>
+						</plot>
+					</graph>
+					<graph x="751" y="602.143" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" title="Graph" isee:fill_intensity="0.1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="blue" pen_width="2" index="0" show_y_axis="true">
+							<entity name="Fluxo_de_Infecção"/>
+						</plot>
+					</graph>
+					<graph x="751" y="602.143" width="350" height="250" type="time_series" isee:points_only="false" show_grid="false" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" title="Graph" isee:fill_intensity="0.1" left_axis_multi_scale="false" left_axis_auto_scale="true" right_axis_multi_scale="false" right_axis_auto_scale="true">
+						<plot color="blue" pen_width="2" index="0" show_y_axis="true">
+							<entity name="Total_Obitos"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<aux x="196.25" y="329" name="taxa2"/>
+				<connector uid="30" angle="267.797">
+					<from>inicio_da_quarentena</from>
+					<to>quarentena</to>
+				</connector>
+				<alias color="blue" background="white" font_style="italic" uid="18" x="235" y="468" width="18" height="18">
+					<shape type="circle" radius="18"/>
+					<of>casos_confirmados</of>
+				</alias>
+				<alias font_style="italic" label_side="center" uid="20" x="218" y="529.5" width="46" height="28">
+					<of>Total_Obitos</of>
+				</alias>
+				<alias color="blue" background="white" font_style="italic" uid="25" x="22" y="164" width="18" height="18">
+					<shape type="circle" radius="18"/>
+					<of>taxa_de_quarentena</of>
+				</alias>
+				<aux x="185.25" y="683" name="historico\nObitos"/>
+				<stock label_side="center" x="222.143" y="748.5" width="57" height="35" name="Historico\nObitosAcum"/>
+				<flow x="180.572" y="761" name="Flow 2">
+					<pts>
+						<pt x="139" y="761"/>
+						<pt x="222.143" y="761"/>
+					</pts>
+				</flow>
+				<connector uid="31" angle="248.405">
+					<from>historico_Obitos</from>
+					<to>Flow_2</to>
+				</connector>
+				<aux x="192" y="852" name="historico\nRecuperadosAcum"/>
+			</view>
+		</views>
+	</model>
+</xmile>
+
